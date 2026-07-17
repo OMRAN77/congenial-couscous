@@ -48,7 +48,12 @@ async function getActiveTunnel() {
 
 async function disconnectServer(name) {
   const exe = findWireGuardExe();
-  await run(`"${exe}" /uninstalltunnelservice ${name}`);
+  const result = await run(`"${exe}" /uninstalltunnelservice ${name}`);
+  // Give Windows a moment to actually stop/remove the service before we
+  // re-check its state, otherwise getActiveTunnel() can still report it
+  // as running right after this command returns.
+  await new Promise((r) => setTimeout(r, 1500));
+  return result;
 }
 
 async function connectServer(name) {
@@ -63,6 +68,10 @@ async function connectServer(name) {
   }
   if (active === name) {
     await disconnectServer(name);
+    const stillActive = await getActiveTunnel();
+    if (stillActive === name) {
+      return { connected: true, server: name, error: 'تعذر إيقاف الخدمة. جرّب تشغيل البرنامج كمسؤول (Run as Administrator).' };
+    }
     return { connected: false, server: name };
   }
 
