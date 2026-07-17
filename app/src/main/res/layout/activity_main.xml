@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/bg_dark"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Omran VPN"
+        android:textColor="@color/text_light"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="غير متصل"
+        android:textColor="@color/text_dim"
+        android:textSize="16sp"
+        android:layout_marginBottom="40dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnFrankfurt"
+        android:layout_width="260dp"
+        android:layout_height="64dp"
+        android:text="🇩🇪 أوروبا - فرانكفورت"
+        android:textSize="16sp"
+        app:backgroundTint="@color/card_bg"
+        android:textColor="@color/text_light"
+        app:cornerRadius="16dp"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSingapore"
+        android:layout_width="260dp"
+        android:layout_height="64dp"
+        android:text="🇸🇬 آسيا - سنغافورة"
+        android:textSize="16sp"
+        app:backgroundTint="@color/card_bg"
+        android:textColor="@color/text_light"
+        app:cornerRadius="16dp"
+        android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDisconnect"
+        android:layout_width="260dp"
+        android:layout_height="56dp"
+        android:text="قطع الاتصال"
+        android:textSize="15sp"
+        app:backgroundTint="@color/danger"
+        android:textColor="@color/text_light"
+        app:cornerRadius="16dp"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:visibility="gone" />
+
+</LinearLayout>
