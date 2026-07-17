@@ -55,11 +55,15 @@ class MainActivity : AppCompatActivity() {
         tvStatus = findViewById(R.id.tvStatus)
         btnFrankfurt = findViewById(R.id.btnFrankfurt)
         btnSingapore = findViewById(R.id.btnSingapore)
+        btnLosAngeles = findViewById(R.id.btnLosAngeles)
+        btnWarsaw = findViewById(R.id.btnWarsaw)
         btnDisconnect = findViewById(R.id.btnDisconnect)
         progressBar = findViewById(R.id.progressBar)
 
         btnFrankfurt.setOnClickListener { connectTo(fraTunnel, R.raw.frankfurt, "🇩🇪 فرانكفورت") }
         btnSingapore.setOnClickListener { connectTo(sgpTunnel, R.raw.singapore, "🇸🇬 سنغافورة") }
+        btnLosAngeles.setOnClickListener { connectTo(laxTunnel, R.raw.losangeles, "🇺🇸 لوس أنجلوس") }
+        btnWarsaw.setOnClickListener { connectTo(wawTunnel, R.raw.warsaw, "🇵🇱 وارسو") }
         btnDisconnect.setOnClickListener { disconnect() }
     }
 
