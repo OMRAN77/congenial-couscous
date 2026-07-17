@@ -48,11 +48,23 @@ async function getActiveTunnel() {
 
 async function disconnectServer(name) {
   const exe = findWireGuardExe();
-  const result = await run(`"${exe}" /uninstalltunnelservice ${name}`);
-  // Give Windows a moment to actually stop/remove the service before we
-  // re-check its state, otherwise getActiveTunnel() can still report it
-  // as running right after this command returns.
-  await new Promise((r) => setTimeout(r, 1500));
+  let result = await run(`"${exe}" /uninstalltunnelservice ${name}`);
+
+  // Windows can take a few seconds to actually stop and remove the
+  // service. Poll repeatedly instead of a single short wait, and retry
+  // the uninstall command itself if the service is still reported as
+  // running after a few checks.
+  for (let attempt = 0; attempt < 10; attempt++) {
+    await new Promise((r) => setTimeout(r, 800));
+    const { stdout, error } = await run(`sc query "WireGuardTunnel$${name}"`);
+    const stillRunning = !error && /:\s*4\b/.test(stdout);
+    if (!stillRunning) break;
+    if (attempt === 4) {
+      // Halfway through: try issuing the uninstall command again in case
+      // the first one didn't take effect.
+      result = await run(`"${exe}" /uninstalltunnelservice ${name}`);
+    }
+  }
   return result;
 }
 
