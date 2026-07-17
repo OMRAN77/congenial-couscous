@@ -147,3 +147,12 @@ ipcMain.handle('vpn:toggle', async (event, serverName) => {
     return { connected: false, server: serverName, error: String(e) };
   }
 });
+
+// Kicks off disconnect in the background and returns immediately.
+// The renderer then polls vpn:status to see when it actually finished,
+// instead of holding one long IPC call open (which felt stuck/required
+// extra clicks or a page reload to reveal it had already succeeded).
+ipcMain.handle('vpn:disconnect-start', (event, serverName) => {
+  disconnectServer(serverName).catch(() => {});
+  return { started: true };
+});

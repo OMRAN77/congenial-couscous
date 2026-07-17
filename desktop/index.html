@@ -142,18 +142,31 @@
     if (busy || !currentActive) return;
     busy = true;
     disconnectBtn.disabled = true;
-    disconnectBtn.textContent = '⏳ جاري القطع (قد تستغرق حتى 40 ثانية)...';
+    disconnectBtn.textContent = '⏳ جاري القطع...';
     badge.textContent = 'جاري قطع الاتصال...';
-    const res = await window.omranVPN.toggle(currentActive);
+
+    // Fire-and-forget: the actual disconnect runs in the background in
+    // the main process, so it keeps going even if this window reloads.
+    // We poll the real service status instead of waiting on one long
+    // IPC call, so the UI updates the moment it actually finishes.
+    await window.omranVPN.startDisconnect(currentActive);
+
+    let done = false;
+    for (let i = 0; i < 45 && !done; i++) {
+      await new Promise((r) => setTimeout(r, 1000));
+      const { active } = await window.omranVPN.getStatus();
+      if (!active) { done = true; }
+    }
+
     busy = false;
     disconnectBtn.disabled = false;
     disconnectBtn.textContent = '⏹️ قطع الاتصال';
-    if (res.error) {
-      badge.textContent = 'فشل قطع الاتصال ❌';
-      alert('فشل قطع الاتصال: ' + res.error);
-      await refreshStatus();
+    if (done) {
+      render(null);
     } else {
-      render(res.connected ? currentActive : null);
+      badge.textContent = 'فشل قطع الاتصال ❌';
+      alert('تعذر تأكيد قطع الاتصال. جرّب تشغيل البرنامج كمسؤول (Run as Administrator).');
+      await refreshStatus();
     }
   });
 
