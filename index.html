@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Omran VPN</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(160deg, #0f172a, #1e293b);
+    color: #fff;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px;
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle { color: #94a3b8; font-size: 12px; margin-bottom: 20px; }
+  .status-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    background: #334155;
+    border: 1px solid #475569;
+  }
+  .status-badge.connected {
+    background: #14532d;
+    border-color: #22c55e;
+    color: #4ade80;
+  }
+  .servers {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .server-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 15px;
+  }
+  .server-btn:hover { border-color: #64748b; }
+  .server-btn.active {
+    background: #14532d;
+    border-color: #22c55e;
+  }
+  .server-btn .flag { font-size: 22px; }
+  .server-btn .name { flex: 1; text-align: right; }
+  .server-btn .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #64748b;
+  }
+  .server-btn.active .dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+  .footer { margin-top: auto; font-size: 11px; color: #64748b; padding-top: 16px; }
+  .disconnect-btn {
+    display: block;
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: #7f1d1d;
+    border: 1px solid #ef4444;
+    color: #fecaca;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .disconnect-btn:hover { background: #991b1b; }
+</style>
+</head>
+<body>
+  <h1>Omran VPN</h1>
+  <div class="subtitle">تطبيق سطح المكتب</div>
+  <div class="status-badge" id="statusBadge">غير متصل</div>
+  <button class="disconnect-btn" id="disconnectBtn" style="display:none">⏹️ قطع الاتصال</button>
+
+  <div class="servers">
+    <div class="server-btn" data-server="frankfurt">
+      <span class="flag">🇩🇪</span>
+      <span class="name">أوروبا - فرانكفورت</span>
+      <span class="dot"></span>
+    </div>
+    <div class="server-btn" data-server="singapore">
+      <span class="flag">🇸🇬</span>
+      <span class="name">آسيا - سنغافورة</span>
+      <span class="dot"></span>
+    </div>
+    <div class="server-btn" data-server="losangeles">
+      <span class="flag">🇺🇸</span>
+      <span class="name">أمريكا - لوس أنجلوس</span>
+      <span class="dot"></span>
+    </div>
+    <div class="server-btn" data-server="warsaw">
+      <span class="flag">🇵🇱</span>
+      <span class="name">بولندا - وارسو</span>
+      <span class="dot"></span>
+    </div>
+  </div>
+
+  <div class="footer">Omran VPN © عمران</div>
+
+<script>
+  const badge = document.getElementById('statusBadge');
+  const disconnectBtn = document.getElementById('disconnectBtn');
+  const buttons = document.querySelectorAll('.server-btn');
+  let busy = false;
+  let currentActive = null;
+
+  function render(active) {
+    currentActive = active;
+    buttons.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.server === active);
+    });
+    if (active) {
+      badge.textContent = 'متصل ✅';
+      badge.classList.add('connected');
+      disconnectBtn.style.display = 'block';
+    } else {
+      badge.textContent = 'غير متصل';
+      badge.classList.remove('connected');
+      disconnectBtn.style.display = 'none';
+    }
+  }
+
+  disconnectBtn.addEventListener('click', async () => {
+    if (busy || !currentActive) return;
+    busy = true;
+    disconnectBtn.disabled = true;
+    disconnectBtn.textContent = '⏳ جاري القطع...';
+    badge.textContent = 'جاري قطع الاتصال...';
+
+    // Fire-and-forget: the actual disconnect runs in the background in
+    // the main process, so it keeps going even if this window reloads.
+    // We poll the real service status instead of waiting on one long
+    // IPC call, so the UI updates the moment it actually finishes.
+    await window.omranVPN.startDisconnect(currentActive);
+
+    let done = false;
+    for (let i = 0; i < 45 && !done; i++) {
+      await new Promise((r) => setTimeout(r, 1000));
+      const { active } = await window.omranVPN.getStatus();
+      if (!active) { done = true; }
+    }
+
+    busy = false;
+    disconnectBtn.disabled = false;
+    disconnectBtn.textContent = '⏹️ قطع الاتصال';
+    if (done) {
+      render(null);
+    } else {
+      badge.textContent = 'فشل قطع الاتصال ❌';
+      alert('تعذر تأكيد قطع الاتصال. جرّب تشغيل البرنامج كمسؤول (Run as Administrator).');
+      await refreshStatus();
+    }
+  });
+
+  async function refreshStatus() {
+    const { active } = await window.omranVPN.getStatus();
+    render(active);
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (busy) return;
+      busy = true;
+      badge.textContent = 'جاري الاتصال...';
+      const server = btn.dataset.server;
+      const res = await window.omranVPN.toggle(server);
+      busy = false;
+      if (res.error) {
+        badge.textContent = 'فشل الاتصال ❌';
+        alert('فشل الاتصال: ' + res.error);
+        await refreshStatus();
+      } else {
+        render(res.connected ? server : null);
+      }
+    });
+  });
+
+  refreshStatus();
+</script>
+</body>
+</html>
