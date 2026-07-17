@@ -69,12 +69,26 @@
   }
   .server-btn.active .dot { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
   .footer { margin-top: auto; font-size: 11px; color: #64748b; padding-top: 16px; }
+  .disconnect-btn {
+    display: block;
+    margin-bottom: 20px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: #7f1d1d;
+    border: 1px solid #ef4444;
+    color: #fecaca;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .disconnect-btn:hover { background: #991b1b; }
 </style>
 </head>
 <body>
   <h1>Omran VPN</h1>
   <div class="subtitle">تطبيق سطح المكتب</div>
   <div class="status-badge" id="statusBadge">غير متصل</div>
+  <button class="disconnect-btn" id="disconnectBtn" style="display:none">⏹️ قطع الاتصال</button>
 
   <div class="servers">
     <div class="server-btn" data-server="frankfurt">
@@ -103,21 +117,41 @@
 
 <script>
   const badge = document.getElementById('statusBadge');
+  const disconnectBtn = document.getElementById('disconnectBtn');
   const buttons = document.querySelectorAll('.server-btn');
   let busy = false;
+  let currentActive = null;
 
   function render(active) {
+    currentActive = active;
     buttons.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.server === active);
     });
     if (active) {
       badge.textContent = 'متصل ✅';
       badge.classList.add('connected');
+      disconnectBtn.style.display = 'block';
     } else {
       badge.textContent = 'غير متصل';
       badge.classList.remove('connected');
+      disconnectBtn.style.display = 'none';
     }
   }
+
+  disconnectBtn.addEventListener('click', async () => {
+    if (busy || !currentActive) return;
+    busy = true;
+    badge.textContent = 'جاري قطع الاتصال...';
+    const res = await window.omranVPN.toggle(currentActive);
+    busy = false;
+    if (res.error) {
+      badge.textContent = 'فشل قطع الاتصال ❌';
+      alert('فشل قطع الاتصال: ' + res.error);
+      await refreshStatus();
+    } else {
+      render(res.connected ? currentActive : null);
+    }
+  });
 
   async function refreshStatus() {
     const { active } = await window.omranVPN.getStatus();
