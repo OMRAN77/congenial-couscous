@@ -1,0 +1,41 @@
+{
+  "name": "omran-vpn-desktop",
+  "version": "1.0.0",
+  "description": "Omran VPN Desktop",
+  "main": "main.js",
+  "author": "Omran",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.omran.vpn.desktop",
+    "productName": "Omran VPN",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "configs/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "configs",
+        "to": "configs"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "requestedExecutionLevel": "requireAdministrator",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
