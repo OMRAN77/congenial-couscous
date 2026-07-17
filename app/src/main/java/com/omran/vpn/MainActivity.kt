@@ -26,12 +26,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var backend: GoBackend
     private val fraTunnel = OmranTunnel("fra")
     private val sgpTunnel = OmranTunnel("sgp")
+    private val laxTunnel = OmranTunnel("lax")
+    private val wawTunnel = OmranTunnel("waw")
     private var activeTunnel: OmranTunnel? = null
     private var pendingConnect: (() -> Unit)? = null
 
     private lateinit var tvStatus: TextView
     private lateinit var btnFrankfurt: Button
     private lateinit var btnSingapore: Button
+    private lateinit var btnLosAngeles: Button
+    private lateinit var btnWarsaw: Button
     private lateinit var btnDisconnect: Button
     private lateinit var progressBar: ProgressBar
 
@@ -136,6 +140,8 @@ class MainActivity : AppCompatActivity() {
         progressBar.visibility = if (loading) View.VISIBLE else View.GONE
         btnFrankfurt.isEnabled = !loading
         btnSingapore.isEnabled = !loading
+        btnLosAngeles.isEnabled = !loading
+        btnWarsaw.isEnabled = !loading
         btnDisconnect.isEnabled = !loading
     }
 }
