@@ -32,15 +32,15 @@ function run(cmd) {
 }
 
 async function getActiveTunnel() {
-  const { stdout } = await run('sc query type= service state= all');
+  // Query each tunnel service individually. This avoids relying on
+  // locale-specific text like "RUNNING" (Arabic Windows shows different
+  // wording) — instead we check the numeric STATE code, which is always
+  // "4" when a service is running, regardless of system language.
   for (const name of SERVERS) {
-    const marker = `WireGuardTunnel$${name}`;
-    const idx = stdout.indexOf(marker);
-    if (idx !== -1) {
-      const chunk = stdout.substring(idx, idx + 300);
-      if (chunk.includes('RUNNING')) {
-        return name;
-      }
+    const { error, stdout } = await run(`sc query "WireGuardTunnel$${name}"`);
+    if (error) continue; // service not installed / not found
+    if (/:\s*4\b/.test(stdout)) {
+      return name;
     }
   }
   return null;
@@ -67,6 +67,12 @@ async function connectServer(name) {
   }
 
   const result = await run(`"${exe}" /installtunnelservice "${confPath}"`);
+  // If WireGuard reports the tunnel is already installed and running,
+  // treat that as a successful connection instead of an error.
+  const alreadyRunning = result.stderr && /already installed and running/i.test(result.stderr);
+  if (alreadyRunning) {
+    return { connected: true, server: name, error: null };
+  }
   return { connected: !result.error, server: name, error: result.error ? result.stderr : null };
 }
 
