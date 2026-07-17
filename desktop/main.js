@@ -50,19 +50,32 @@ async function disconnectServer(name) {
   const exe = findWireGuardExe();
   let result = await run(`"${exe}" /uninstalltunnelservice ${name}`);
 
-  // Windows can take a few seconds to actually stop and remove the
-  // service. Poll repeatedly instead of a single short wait, and retry
-  // the uninstall command itself if the service is still reported as
-  // running after a few checks.
-  for (let attempt = 0; attempt < 10; attempt++) {
-    await new Promise((r) => setTimeout(r, 800));
-    const { stdout, error } = await run(`sc query "WireGuardTunnel$${name}"`);
+  // Windows (especially with antivirus/driver cleanup) can take a long
+  // time to actually stop and remove the tunnel service. Poll for up to
+  // ~40 seconds instead of giving up quickly, and escalate with direct
+  // "sc stop"/"sc delete" fallbacks plus repeated uninstall attempts so a
+  // single click reliably finishes the job instead of requiring the user
+  // to click repeatedly.
+  const serviceName = `WireGuardTunnel$${name}`;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    const { stdout, error } = await run(`sc query "${serviceName}"`);
     const stillRunning = !error && /:\s*4\b/.test(stdout);
-    if (!stillRunning) break;
-    if (attempt === 4) {
-      // Halfway through: try issuing the uninstall command again in case
-      // the first one didn't take effect.
+    const notFound = error || /1060/.test(stdout || '');
+    if (!stillRunning || notFound) break;
+
+    if (attempt === 5 || attempt === 15) {
+      // Re-issue the uninstall command in case the first one didn't
+      // fully take effect.
       result = await run(`"${exe}" /uninstalltunnelservice ${name}`);
+    }
+    if (attempt === 10) {
+      // Fallback: force-stop and delete the service directly via SCM.
+      await run(`sc stop "${serviceName}"`);
+    }
+    if (attempt === 25) {
+      await run(`sc stop "${serviceName}"`);
+      await run(`sc delete "${serviceName}"`);
     }
   }
   return result;
